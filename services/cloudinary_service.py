@@ -35,10 +35,9 @@ class CloudinaryService:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error deleting image: {str(e)}")
 
-    def deleteImageByUrl(self, imageUrl: str) -> bool:
+    def deleteImageByUrl(self, imageUrl: str) -> None:
         """
         Elimina una imagen de Cloudinary usando su URL completa.
-        Retorna True si fue exitosa, False si falló.
         
         Ejemplo:
         URL: https://res.cloudinary.com/cloud/image/upload/v123/vehicles/456/uuid.jpg
@@ -47,11 +46,10 @@ class CloudinaryService:
         try:
             publicId = self.extractPublicIdFromUrl(imageUrl)
             self.deleteImage(publicId)
-            return True
         except Exception as e:
             logger = logging.getLogger(__name__)
             logger.warning(f"Could not delete image from Cloudinary: {str(e)}")
-            return False
+            raise HTTPException(status_code=500, detail=f"Error deleting image from Cloudinary: {str(e)}")
 
     def extractPublicIdFromUrl(self, imageUrl: str) -> str:
         """

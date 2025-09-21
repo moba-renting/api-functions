@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Path
+from fastapi import APIRouter, Depends, UploadFile, File, Path, Query
 from dependency_injector.wiring import inject, Provide
 from core.container import Container
 from services.driver_service import DriverService
@@ -16,12 +16,14 @@ async def upsertDriverImage(
     image: UploadFile = File(...),
     driverService: DriverService = Depends(Provide[Container.driverService])
 ):
-    return {"message": driverService.upsertDriverImage(driver_id, image)}
+    url = driverService.upsertDriverImage(driver_id, image)
+    return {"url": url}
 
-@router.delete("/{driver_id}/image")
+@router.delete("/image")
 @inject
 async def deleteDriverImage(
-    driver_id: int = Path(...),
+    image_url: str = Query(..., description="URL of the image to delete"),
     driverService: DriverService = Depends(Provide[Container.driverService])
 ):
-    return {"message": driverService.deleteDriverImage(driver_id)}
+    driverService.deleteDriverImage(image_url)
+    return

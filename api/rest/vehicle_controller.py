@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Query, Path
+from typing import List
 from dependency_injector.wiring import inject, Provide
 from core.container import Container
 from services.vehicle_service import VehicleService
@@ -16,13 +17,14 @@ async def addVehicleImage(
     image: UploadFile = File(...),
     vehicleService: VehicleService = Depends(Provide[Container.vehicleService])
 ):
-    return {"message": vehicleService.addVehicleImage(vehicle_id, image)}
+    url = vehicleService.addVehicleImage(vehicle_id, image)
+    return {"url": url}
 
-@router.delete("/{vehicle_id}/images/remove")
+@router.delete("/images/remove")
 @inject
 async def removeVehicleImage( 
-    vehicle_id: int = Path(...),
-    imageUrl: str = Query(...),
+    imageUrls: List[str] = Query(..., description="URLs of the images to delete"),
     vehicleService: VehicleService = Depends(Provide[Container.vehicleService])
 ):
-    return {"message": vehicleService.removeVehicleImage(vehicle_id, imageUrl)}
+    vehicleService.removeVehicleImage(imageUrls)
+    return

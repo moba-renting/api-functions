@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Path
+from fastapi import APIRouter, Depends, UploadFile, File, Path, Query
 from dependency_injector.wiring import inject, Provide
 from core.container import Container
 from services.category_service import CategoryService
@@ -16,12 +16,14 @@ async def upsertCategoryImage(
     image: UploadFile = File(...),
     categoryService: CategoryService = Depends(Provide[Container.categoryService])
 ):
-    return {"message": categoryService.upsertCategoryImage(category_id, image)}
+    url = categoryService.upsertCategoryImage(category_id, image)
+    return {"url": url}
 
-@router.delete("/{category_id}/image")
+@router.delete("/image")
 @inject
-async def deleteCategoryImage( 
-    category_id: int = Path(...),
+async def deleteCategoryImage(
+    image_url: str = Query(..., description="URL of the image to delete"),
     categoryService: CategoryService = Depends(Provide[Container.categoryService])
 ):
-    return {"message": categoryService.deleteCategoryImage(category_id)}
+    categoryService.deleteCategoryImage(image_url)
+    return
