@@ -1,5 +1,4 @@
-from typing import List
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File, Query
 from dependency_injector.wiring import inject, Provide
 from core.container import Container
 from services.home_page_service import HomePageService
@@ -10,13 +9,21 @@ router = APIRouter(
     tags=["home-page"]
 )
 
-@router.put("/hero-banner")
+@router.post("/hero-banner/add")
 @inject
-async def upsertHeroBannerImages( 
-    images: List[UploadFile] = File(...),
+async def addHeroBannerImage( 
+    image: UploadFile = File(...),
     homePageService: HomePageService = Depends(Provide[Container.homePageService])
 ):
-    return {"message": homePageService.upsertHeroBannerImages(images)}
+    return {"message": homePageService.addHeroBannerImage(image)}
+
+@router.delete("/hero-banner/remove")
+@inject
+async def removeHeroBannerImage( 
+    imageUrl: str = Query(...),
+    homePageService: HomePageService = Depends(Provide[Container.homePageService])
+):
+    return {"message": homePageService.removeHeroBannerImage(imageUrl)}
 
 @router.put("/b2b-benefits")
 @inject

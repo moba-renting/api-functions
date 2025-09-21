@@ -1,4 +1,3 @@
-import json
 import logging
 import uuid
 from typing import List
@@ -14,29 +13,52 @@ class HomePageService:
         self.cloudinaryService = cloudinaryService
         self.supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
 
-    def upsertHeroBannerImages(self, newHeroBannerImages: List[UploadFile]) -> str:
+    def addHeroBannerImage(self, imageFile: UploadFile) -> str:
         try:
-            # Subir imágenes a Cloudinary
-            uploadedUrls = []
-            for i, imageFile in enumerate(newHeroBannerImages):
-                url = self.cloudinaryService.upsertImage("home-page", f"hero_banner_{i+1}", imageFile)
-                uploadedUrls.append(url)
-            
-            # Actualizar base de datos
-            data, count = self.supabase.table("home_page_config") \
-                .update({"hero_banner_urls": uploadedUrls}) \
-                .eq("id", 1) \
-                .execute()
-            
-            return "Hero banner images updated successfully"
+            # Generar UUID
+            imageId = str(uuid.uuid4())
+            # Subir a Cloudinary
+            url = self.cloudinaryService.upsertImage("home-page/hero-banners", imageId, imageFile)
+            # Leer array actual
+            data, count = self.supabase.table("home_page_config").select("hero_banner_urls").eq("id", 1).execute()
+            currentUrls = data[1][0]["hero_banner_urls"] if data[1] else []
+            # Agregar nueva URL
+            currentUrls.append(url)
+            # Actualizar
+            self.supabase.table("home_page_config").update({"hero_banner_urls": currentUrls}).eq("id", 1).execute()
+            return "Image added successfully"
         except Exception as e:
-            logger.error(f"Error updating hero banner images: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error updating hero banner images: {str(e)}")
+            logger.error(f"Error adding hero banner image: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error adding hero banner image: {str(e)}")
+
+    def removeHeroBannerImage(self, imageUrl: str) -> str:
+        try:
+            # Leer array actual
+            data, count = self.supabase.table("home_page_config").select("hero_banner_urls").eq("id", 1).execute()
+            currentUrls = data[1][0]["hero_banner_urls"] if data[1] else []
+            if imageUrl not in currentUrls:
+                raise HTTPException(status_code=404, detail="Image URL not found in banner")
+            # Verificar que no quede vacío
+            if len(currentUrls) == 1:
+                raise HTTPException(status_code=400, detail="Cannot remove the last image from the banner")
+            # Remover URL
+            currentUrls.remove(imageUrl)
+            # Actualizar
+            self.supabase.table("home_page_config").update({"hero_banner_urls": currentUrls}).eq("id", 1).execute()
+            # Extraer public_id completo y eliminar de Cloudinary
+            success = self.cloudinaryService.deleteImageByUrl(imageUrl)
+            if not success:
+                logger.warning(f"Could not delete hero banner image from Cloudinary: {imageUrl}")
+                # No lanzamos error aquí porque el array ya se actualizó en la BD
+            return "Image removed successfully"
+        except Exception as e:
+            logger.error(f"Error removing hero banner image: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error removing hero banner image: {str(e)}")
 
     def upsertB2bBenefitsImage(self, newB2bBenefitsImage: UploadFile) -> str:
         try:
             # Subir imagen a Cloudinary
-            url = self.cloudinaryService.upsertImage("home-page", "b2b_benefits", newB2bBenefitsImage)
+            url = self.cloudinaryService.upsertImage("home-page/b2b_benefits", "image", newB2bBenefitsImage)
             
             # Actualizar base de datos
             data, count = self.supabase.table("home_page_config") \
@@ -52,8 +74,8 @@ class HomePageService:
     def upsertB2cBenefitsImage(self, newB2cBenefitsImage: UploadFile) -> str:
         try:
             # Subir imagen a Cloudinary
-            url = self.cloudinaryService.upsertImage("home-page", "b2c_benefits", newB2cBenefitsImage)
-            
+            url = self.cloudinaryService.upsertImage("home-page/b2c_benefits", "image", newB2cBenefitsImage)
+
             # Actualizar base de datos
             data, count = self.supabase.table("home_page_config") \
                 .update({"b2c_benefits_url": url}) \
