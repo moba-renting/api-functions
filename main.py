@@ -12,13 +12,14 @@ from api.rest.home_page_controller import router as homePageController
 from api.rest.vehicle_controller import router as vehicleController
 from api.rest.category_controller import router as categoryController
 from api.rest.driver_controller import router as driverController
+from api.rest.openai_controller import router as openaiController
 
 logger = logging.getLogger(__name__)
 
 def createApp():
     # Initialize container
     container = Container()
-    container.wire(modules=["api.rest.home_page_controller", "api.rest.vehicle_controller", "api.rest.category_controller", "api.rest.driver_controller"])
+    container.wire(modules=["api.rest.home_page_controller", "api.rest.vehicle_controller", "api.rest.category_controller", "api.rest.driver_controller", "api.rest.openai_controller"])
     
     app = FastAPI()
     app.container = container
@@ -37,6 +38,7 @@ def createApp():
     app.include_router(vehicleController)
     app.include_router(categoryController)
     app.include_router(driverController)
+    app.include_router(openaiController)
     
     return app
 
