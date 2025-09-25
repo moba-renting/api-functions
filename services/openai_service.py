@@ -41,13 +41,15 @@ class OpenAIService:
 - Nombre del conductor
 - Total de viajes (número)
 - Tiempo en la app (en formato {value: número, unit: "months"/"years"})
+- Calificación/Rating del conductor (número de estrellas, típicamente 1-5)
 
 Devuelve SOLO un JSON válido con esta estructura:
 {
   "app": string | null,
   "name": string | null,
   "totalTrips": number | null,
-  "timeInApp": {value: number, unit: string} | null
+  "timeInApp": {value: number, unit: string} | null,
+  "rating": number | null
 }"""
 
             # Hacer la llamada a OpenAI
@@ -102,6 +104,7 @@ Devuelve SOLO un JSON válido con esta estructura:
                 "name": parsed_data.get("name") if parsed_data.get("name") else None,
                 "totalTrips": self._parse_int(parsed_data.get("totalTrips")),
                 "timeInApp": self._validate_time_in_app(parsed_data.get("timeInApp")),
+                "rating": self._parse_rating(parsed_data.get("rating")),
                 "rawText": raw_text
             }
 
@@ -176,3 +179,26 @@ Devuelve SOLO un JSON válido con esta estructura:
                 unit = "years"
         
         return {"value": value, "unit": unit}
+
+    def _parse_rating(self, value: Any) -> Optional[float]:
+        """Convierte un valor a calificación de estrellas de forma segura."""
+        if value is None:
+            return None
+        
+        try:
+            if isinstance(value, (int, float)):
+                rating = float(value)
+                # Validar que esté en el rango correcto
+                if 0 <= rating <= 5:
+                    return round(rating, 2)
+            elif isinstance(value, str):
+                # Extraer números de la cadena, incluyendo decimales
+                import re
+                numbers = re.findall(r'\d+\.?\d*', value.replace(',', '.'))
+                if numbers:
+                    rating = float(numbers[0])
+                    if 0 <= rating <= 5:
+                        return round(rating, 2)
+            return None
+        except (ValueError, TypeError):
+            return None
